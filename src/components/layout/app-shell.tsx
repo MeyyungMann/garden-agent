@@ -17,13 +17,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar - hidden on mobile */}
       <div className="hidden md:block">
-        <Sidebar />
+        <Sidebar onOpenChat={() => setChatOpen(true)} />
       </div>
 
       {/* Mobile sidebar - Sheet overlay */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <SheetContent side="left" className="p-0 w-60">
-          <Sidebar onNavigate={() => setSidebarOpen(false)} />
+          <Sidebar onNavigate={() => setSidebarOpen(false)} onOpenChat={() => { setSidebarOpen(false); setChatOpen(true); }} />
         </SheetContent>
       </Sheet>
 

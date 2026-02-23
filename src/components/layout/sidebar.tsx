@@ -18,14 +18,14 @@ const navItems = [
   { href: "/seeds", label: "Seeds", icon: Package },
   { href: "/garden", label: "Garden", icon: MapPin },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/chat", label: "Chat", icon: MessageCircle },
 ];
 
 interface SidebarProps {
   onNavigate?: () => void;
+  onOpenChat?: () => void;
 }
 
-export function Sidebar({ onNavigate }: SidebarProps) {
+export function Sidebar({ onNavigate, onOpenChat }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -57,6 +57,19 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             </Link>
           );
         })}
+        <button
+          onClick={() => {
+            onNavigate?.();
+            onOpenChat?.();
+          }}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+            "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+          )}
+        >
+          <MessageCircle className="h-4 w-4" />
+          Chat
+        </button>
       </nav>
     </aside>
   );

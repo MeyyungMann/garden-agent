@@ -5,13 +5,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useEffect, useRef } from "react";
 import { ToolResultCard } from "./tool-result-card";
-import { Bot, User, Sprout, Package, MapPin, CalendarDays, Search } from "lucide-react";
+import { Bot, User, Sprout, Package, MapPin, CalendarDays, Search, BookOpen, History, Loader2 } from "lucide-react";
 import { ChatMessageSkeleton } from "@/components/ui/loading-skeleton";
 
 interface ChatMessagesProps {
   messages: UIMessage[];
   isLoading: boolean;
   initialLoading?: boolean;
+  summary?: string | null;
+  hasHistory?: boolean;
+  isLoadingHistory?: boolean;
+  onLoadHistory?: () => void;
 }
 
 const examplePrompts = [
@@ -23,7 +27,15 @@ const examplePrompts = [
   { icon: Search, text: "Search for pepper varieties" },
 ];
 
-export function ChatMessages({ messages, isLoading, initialLoading }: ChatMessagesProps) {
+export function ChatMessages({
+  messages,
+  isLoading,
+  initialLoading,
+  summary,
+  hasHistory,
+  isLoadingHistory,
+  onLoadHistory,
+}: ChatMessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,6 +70,21 @@ export function ChatMessages({ messages, isLoading, initialLoading }: ChatMessag
               </div>
             ))}
           </div>
+
+          {onLoadHistory && (
+            <button
+              onClick={onLoadHistory}
+              disabled={isLoadingHistory}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 px-4 py-3 text-sm text-muted-foreground transition-all hover:border-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20 disabled:opacity-50"
+            >
+              {isLoadingHistory ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <History className="h-4 w-4" />
+              )}
+              {isLoadingHistory ? "Loading previous chat..." : "Continue previous chat"}
+            </button>
+          )}
         </div>
       </div>
     );
@@ -66,6 +93,17 @@ export function ChatMessages({ messages, isLoading, initialLoading }: ChatMessag
   return (
     <ScrollArea className="flex-1">
       <div className="space-y-4 p-4">
+        {summary && (
+          <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30 px-3 py-2 text-sm text-blue-700 dark:text-blue-300">
+            <BookOpen className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <div>
+              <span className="font-medium">Continuing from previous session</span>
+              <p className="text-xs mt-1 opacity-80">
+                Earlier messages have been summarized to maintain context.
+              </p>
+            </div>
+          </div>
+        )}
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}

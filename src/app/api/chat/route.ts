@@ -29,8 +29,11 @@ function isModelNotFoundError(error: unknown): boolean {
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
-    log.info("Chat request received", { messageCount: messages?.length ?? 0 });
+    const { messages, summary } = await req.json();
+    log.info("Chat request received", {
+      messageCount: messages?.length ?? 0,
+      hasSummary: !!summary,
+    });
 
     if (!messages || !Array.isArray(messages)) {
       log.warn("Invalid request: messages is not an array");
@@ -40,7 +43,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await runAgent(messages);
+    const result = await runAgent(messages, summary);
     log.info("Returning stream response");
     return result.toUIMessageStreamResponse();
   } catch (error) {

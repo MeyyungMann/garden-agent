@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -11,7 +12,7 @@ import { ChatInput } from "./chat-input";
 import { ChatError } from "./chat-error";
 import { useChatAgent } from "@/hooks/use-chat-agent";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, Maximize2, Minimize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatPanelProps {
@@ -19,9 +20,31 @@ interface ChatPanelProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
-  const { messages, input, setInput, handleSubmit, isLoading, stop, status, error, clearMessages } =
-    useChatAgent();
+function ChatContent({
+  isFullscreen,
+  onToggleFullscreen,
+  onClose,
+}: {
+  isFullscreen: boolean;
+  onToggleFullscreen: () => void;
+  onClose?: () => void;
+}) {
+  const {
+    messages,
+    input,
+    setInput,
+    handleSubmit,
+    isLoading,
+    stop,
+    status,
+    error,
+    clearMessages,
+    sessionState,
+    summary,
+    hasHistory,
+    isLoadingHistory,
+    loadHistory,
+  } = useChatAgent();
 
   const statusColor =
     status === "streaming" || status === "submitted"
@@ -31,25 +54,25 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
         : "bg-green-500";
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:w-[400px] md:w-[540px] flex flex-col p-0">
-        <SheetHeader className="px-4 py-3 border-b">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <SheetTitle>Garden AI Assistant</SheetTitle>
-              <span
-                className={cn("h-2 w-2 rounded-full", statusColor)}
-                title={
-                  status === "streaming"
-                    ? "Streaming"
-                    : status === "submitted"
-                      ? "Processing"
-                      : error
-                        ? "Error"
-                        : "Ready"
-                }
-              />
-            </div>
+    <>
+      <div className="px-4 py-3 border-b">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold">Garden AI Assistant</h2>
+            <span
+              className={cn("h-2 w-2 rounded-full", statusColor)}
+              title={
+                status === "streaming"
+                  ? "Streaming"
+                  : status === "submitted"
+                    ? "Processing"
+                    : error
+                      ? "Error"
+                      : "Ready"
+              }
+            />
+          </div>
+          <div className="flex items-center gap-1">
             {messages.length > 0 && (
               <Button
                 variant="ghost"
@@ -58,19 +81,99 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
                 className="h-7 text-xs text-muted-foreground hover:text-destructive"
               >
                 <Trash2 className="h-3 w-3 mr-1" />
-                Clear chat
+                Clear
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggleFullscreen}
+              className="h-7 w-7 text-muted-foreground"
+              title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="h-3.5 w-3.5" />
+              ) : (
+                <Maximize2 className="h-3.5 w-3.5" />
+              )}
+            </Button>
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="h-7 w-7 text-muted-foreground"
+                title="Close"
+              >
+                <X className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>
+        </div>
+      </div>
+
+      {sessionState === "loading" ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-sm text-muted-foreground animate-pulse">
+            Starting chat...
+          </div>
+        </div>
+      ) : (
+        <>
+          <ChatMessages
+            messages={messages}
+            isLoading={isLoading}
+            summary={summary}
+            hasHistory={hasHistory}
+            isLoadingHistory={isLoadingHistory}
+            onLoadHistory={loadHistory}
+          />
+          {error && <ChatError error={error} onRetry={() => handleSubmit()} />}
+          <ChatInput
+            input={input}
+            onInputChange={setInput}
+            onSubmit={() => handleSubmit()}
+            onStop={stop}
+            isLoading={isLoading}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
+export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  if (!open) return null;
+
+  // Fullscreen mode — render as a fixed overlay instead of a Sheet
+  if (isFullscreen) {
+    return (
+      <div className="fixed inset-0 z-50 bg-background flex flex-col">
+        <ChatContent
+          isFullscreen={true}
+          onToggleFullscreen={() => setIsFullscreen(false)}
+          onClose={() => {
+            setIsFullscreen(false);
+            onOpenChange(false);
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Normal mode — side sheet
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent showCloseButton={false} className="w-full sm:w-[400px] md:w-[540px] flex flex-col p-0">
+        <SheetHeader className="sr-only">
+          <SheetTitle>Garden AI Assistant</SheetTitle>
         </SheetHeader>
-        <ChatMessages messages={messages} isLoading={isLoading} />
-        {error && <ChatError error={error} onRetry={() => handleSubmit()} />}
-        <ChatInput
-          input={input}
-          onInputChange={setInput}
-          onSubmit={() => handleSubmit()}
-          onStop={stop}
-          isLoading={isLoading}
+        <ChatContent
+          isFullscreen={false}
+          onToggleFullscreen={() => setIsFullscreen(true)}
+          onClose={() => onOpenChange(false)}
         />
       </SheetContent>
     </Sheet>
