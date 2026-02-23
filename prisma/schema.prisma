@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PlantType {
+  VEGETABLE
+  HERB
+  FLOWER
+  FRUIT
+  OTHER
+}
+
+enum SunRequirement {
+  FULL_SUN
+  PARTIAL_SUN
+  SHADE
+}
+
+enum WaterNeeds {
+  LOW
+  MODERATE
+  HIGH
+}
+
+enum LocationType {
+  BED
+  POT
+  CONTAINER
+  ROW
+  GREENHOUSE
+  INDOOR
+  OTHER
+}
+
+enum PlantingStatus {
+  PLANNED
+  SOWN
+  GERMINATED
+  TRANSPLANTED
+  GROWING
+  HARVESTING
+  DONE
+  FAILED
+}
+
+model Plant {
+  id             String          @id @default(cuid())
+  name           String
+  variety        String?
+  type           PlantType       @default(OTHER)
+  photoUrl       String?
+  growingNotes   String?
+  daysToMaturity Int?
+  sunRequirement SunRequirement?
+  waterNeeds     WaterNeeds?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  seeds     Seed[]
+  plantings Planting[]
+
+  // Companion plants (self-referential many-to-many)
+  companions   Plant[] @relation("CompanionPlants")
+  companionOf  Plant[] @relation("CompanionPlants")
+
+  @@unique([name, variety])
+}
+
+model Seed {
+  id           String    @id @default(cuid())
+  plantId      String
+  plant        Plant     @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  quantity     Int       @default(0)
+  quantityUnit String    @default("packets")
+  supplier     String?
+  purchaseDate DateTime?
+  expiryDate   DateTime?
+  viability    Int?      // percentage 0-100
+  lotNumber    String?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model GardenLocation {
+  id           String       @id @default(cuid())
+  name         String       @unique
+  locationType LocationType @default(BED)
+  description  String?
+  sunExposure  SunRequirement?
+  soilType     String?
+  climateZone  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  plantings Planting[]
+}
+
+model Planting {
+  id              String         @id @default(cuid())
+  plantId         String
+  plant           Plant          @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  locationId      String?
+  location        GardenLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  year            Int            @default(2026)
+  sowIndoorDate   DateTime?
+  sowOutdoorDate  DateTime?
+  transplantDate  DateTime?
+  harvestStart    DateTime?
+  harvestEnd      DateTime?
+  status          PlantingStatus @default(PLANNED)
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  role        String   // "user" | "assistant" | "system" | "tool"
+  content     String
+  toolCalls   Json?
+  toolResults Json?
+  createdAt   DateTime @default(now())
+}
