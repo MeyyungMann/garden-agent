@@ -143,7 +143,12 @@ function MessageBubble({ message }: { message: UIMessage }) {
         {hasParts
           ? message.parts.map((part, i) => {
               if (part.type === "text") {
-                return <p key={i} className="whitespace-pre-wrap">{part.text}</p>;
+                const cleaned = part.text
+                  .replace(/<\s*tools\s*>[\s\S]*?<\s*\/\s*tools\s*>/gi, "")
+                  .replace(/<\s*tools\s*>[\s\S]*$/gi, "")
+                  .trim();
+                if (!cleaned) return null;
+                return <p key={i} className="whitespace-pre-wrap">{cleaned}</p>;
               }
               if (part.type.startsWith("tool-") || part.type === "dynamic-tool") {
                 const toolPart = part as unknown as {

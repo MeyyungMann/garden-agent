@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar - hidden on mobile */}
-      <div className="hidden md:block">
+      <div className="hidden md:block h-full">
         <Sidebar onOpenChat={() => setChatOpen(true)} />
       </div>
 
@@ -27,14 +27,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SheetContent>
       </Sheet>
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="relative flex flex-1 flex-col overflow-hidden">
         <Header
           onToggleChat={() => setChatOpen(true)}
           onToggleSidebar={() => setSidebarOpen(true)}
         />
         <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+        <ChatPanel open={chatOpen} onOpenChange={setChatOpen} />
       </div>
-      <ChatPanel open={chatOpen} onOpenChange={setChatOpen} />
     </div>
   );
 }

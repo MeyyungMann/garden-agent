@@ -54,6 +54,7 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: development
+      WATCHPACK_POLLING: "true"
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/plant_organizer?schema=public"
       OLLAMA_BASE_URL: "http://ollama:11434"
       OLLAMA_MODEL: "qwen3:32b"

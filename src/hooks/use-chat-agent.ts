@@ -109,6 +109,7 @@ export function useChatAgent() {
 
         log.info("Navigating to", { path, page, plantId, seedId });
         router.push(path);
+        return `Navigated to ${path}`;
       }
     },
     onError: (error) => {

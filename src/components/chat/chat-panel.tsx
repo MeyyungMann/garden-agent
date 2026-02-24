@@ -174,7 +174,7 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
   // Fullscreen mode — render as a fixed overlay instead of a Sheet
   if (isFullscreen) {
     return (
-      <div className="fixed inset-0 z-50 bg-background flex flex-col">
+      <div className="absolute inset-0 z-40 bg-background flex flex-col">
         <ChatContent
           isFullscreen={true}
           onToggleFullscreen={() => setIsFullscreen(false)}
