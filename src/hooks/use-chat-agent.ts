@@ -86,36 +86,42 @@ export function useChatAgent() {
     });
   }, [summary]);
 
+  const navigatedToolCalls = useRef(new Set<string>());
+
   const chat = useChat({
     transport: transportRef.current,
-    onToolCall: ({ toolCall }) => {
-      if (toolCall.toolName === "navigateTo") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const args = (toolCall as any).args ?? (toolCall as any).input ?? {};
-        const { page, plantId, seedId } = args as {
-          page: string;
-          plantId?: string;
-          seedId?: string;
-        };
-
-        let path: string;
-        if (plantId) {
-          path = `/plants/${plantId}`;
-        } else if (seedId) {
-          path = `/seeds/${seedId}`;
-        } else {
-          path = ROUTE_MAP[page] || "/";
-        }
-
-        log.info("Navigating to", { path, page, plantId, seedId });
-        router.push(path);
-        return `Navigated to ${path}`;
-      }
-    },
     onError: (error) => {
       log.error("Chat error", { error: error.message });
     },
   });
+
+  // Handle navigateTo tool results by watching messages
+  useEffect(() => {
+    for (const msg of chat.messages) {
+      if (msg.role !== "assistant") continue;
+      for (const part of msg.parts ?? []) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const p = part as any;
+        if (p.type === "tool-invocation" && p.toolInvocation?.toolName === "navigateTo" && p.toolInvocation?.state === "result") {
+          const callId = p.toolInvocation.toolCallId;
+          if (navigatedToolCalls.current.has(callId)) continue;
+          navigatedToolCalls.current.add(callId);
+
+          const { page, plantId, seedId } = p.toolInvocation.result?.navigateTo ?? p.toolInvocation.args ?? {};
+          let path: string;
+          if (plantId) {
+            path = `/plants/${plantId}`;
+          } else if (seedId) {
+            path = `/seeds/${seedId}`;
+          } else {
+            path = ROUTE_MAP[page] || "/";
+          }
+          log.info("Navigating to", { path });
+          router.push(path);
+        }
+      }
+    }
+  }, [chat.messages, router]);
 
   // Auto-save messages to DB — runs whenever messages change and not streaming
   useEffect(() => {

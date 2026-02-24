@@ -1,9 +1,9 @@
 import { tool } from "ai";
 import { z } from "zod/v4";
-import { getPlants, createPlant } from "@/actions/plants";
-import { createSeed, updateSeed } from "@/actions/seeds";
-import { getPlantings, createPlanting, updatePlanting } from "@/actions/plantings";
-import { getLocations } from "@/actions/locations";
+import { getPlants, createPlant, updatePlant, deletePlant } from "@/actions/plants";
+import { getSeeds, createSeed, updateSeed, deleteSeed } from "@/actions/seeds";
+import { getPlantings, createPlanting, updatePlanting, deletePlanting } from "@/actions/plantings";
+import { getLocations, createLocation, updateLocation, deleteLocation } from "@/actions/locations";
 import { getDashboardSummary } from "@/actions/dashboard";
 import { createLogger } from "@/lib/logger";
 
@@ -448,6 +448,245 @@ export const tools = {
     },
   }),
 
+  addLocation: tool({
+    description:
+      "Create a new garden location (bed, pot, container, row, greenhouse, indoor area). Use this when the user wants to add a new location to their garden.",
+    inputSchema: z.object({
+      name: z.string().describe("Location name (e.g., 'Big Greenhouse', 'Raised Bed A')"),
+      locationType: z
+        .enum(["BED", "POT", "CONTAINER", "ROW", "GREENHOUSE", "INDOOR", "OTHER"])
+        .optional()
+        .describe("The type of garden location"),
+      description: z.string().optional().describe("Description of the location"),
+      sunExposure: z
+        .enum(["FULL_SUN", "PARTIAL_SUN", "SHADE"])
+        .optional()
+        .describe("Sun exposure level"),
+      soilType: z.string().optional().describe("Type of soil (e.g., 'loamy', 'sandy')"),
+      climateZone: z.string().optional().describe("USDA hardiness zone or climate zone"),
+    }),
+    execute: async (params) => {
+      log.info("addLocation tool called", { name: params.name });
+      try {
+        const location = await createLocation(params);
+        log.info("addLocation result", { id: location.id, name: location.name });
+        return {
+          success: true as const,
+          location: {
+            id: location.id,
+            name: location.name,
+            locationType: location.locationType,
+            description: location.description,
+            sunExposure: location.sunExposure,
+          },
+        };
+      } catch (error) {
+        log.error("addLocation tool failed", { error });
+        return {
+          success: false as const,
+          error: "Failed to create location. It may already exist with that name.",
+        };
+      }
+    },
+  }),
+
+  updateLocationTool: tool({
+    description:
+      "Update an existing garden location's details. Use getLocations first to find the location ID.",
+    inputSchema: z.object({
+      locationId: z.string().describe("The ID of the location to update (get from getLocations)"),
+      name: z.string().optional().describe("New name for the location"),
+      locationType: z
+        .enum(["BED", "POT", "CONTAINER", "ROW", "GREENHOUSE", "INDOOR", "OTHER"])
+        .optional()
+        .describe("New location type"),
+      description: z.string().optional().describe("New description"),
+      sunExposure: z
+        .enum(["FULL_SUN", "PARTIAL_SUN", "SHADE"])
+        .optional()
+        .describe("New sun exposure level"),
+      soilType: z.string().optional().describe("New soil type"),
+      climateZone: z.string().optional().describe("New climate zone"),
+    }),
+    execute: async ({ locationId, ...data }) => {
+      log.info("updateLocation tool called", { locationId, data });
+      try {
+        const location = await updateLocation(locationId, data);
+        log.info("updateLocation result", { id: location.id });
+        return {
+          success: true as const,
+          location: {
+            id: location.id,
+            name: location.name,
+            locationType: location.locationType,
+            sunExposure: location.sunExposure,
+          },
+        };
+      } catch (error) {
+        log.error("updateLocation tool failed", { error });
+        return { success: false as const, error: "Failed to update location." };
+      }
+    },
+  }),
+
+  deleteLocationTool: tool({
+    description:
+      "Delete a garden location. Use getLocations first to find the location ID. Plantings at this location will lose their location reference.",
+    inputSchema: z.object({
+      locationId: z.string().describe("The ID of the location to delete"),
+    }),
+    execute: async ({ locationId }) => {
+      log.info("deleteLocation tool called", { locationId });
+      try {
+        const location = await deleteLocation(locationId);
+        log.info("deleteLocation result", { id: location.id });
+        return { success: true as const, deletedName: location.name };
+      } catch (error) {
+        log.error("deleteLocation tool failed", { error });
+        return { success: false as const, error: "Failed to delete location." };
+      }
+    },
+  }),
+
+  updatePlantTool: tool({
+    description:
+      "Update an existing plant's details. Use searchPlants first to find the plant ID.",
+    inputSchema: z.object({
+      plantId: z.string().describe("The ID of the plant to update (get from searchPlants)"),
+      name: z.string().optional().describe("New plant name"),
+      variety: z.string().optional().describe("New variety name"),
+      type: z
+        .enum(["VEGETABLE", "HERB", "FLOWER", "FRUIT", "OTHER"])
+        .optional()
+        .describe("New plant type"),
+      daysToMaturity: z.number().optional().describe("New days to maturity"),
+      sunRequirement: z
+        .enum(["FULL_SUN", "PARTIAL_SUN", "SHADE"])
+        .optional()
+        .describe("New sun requirement"),
+      waterNeeds: z
+        .enum(["LOW", "MODERATE", "HIGH"])
+        .optional()
+        .describe("New water needs"),
+      growingNotes: z.string().optional().describe("New growing notes"),
+    }),
+    execute: async ({ plantId, ...data }) => {
+      log.info("updatePlant tool called", { plantId, data });
+      try {
+        const plant = await updatePlant(plantId, data);
+        log.info("updatePlant result", { id: plant.id });
+        return {
+          success: true as const,
+          plant: {
+            id: plant.id,
+            name: plant.name,
+            variety: plant.variety,
+            type: plant.type,
+            daysToMaturity: plant.daysToMaturity,
+            sunRequirement: plant.sunRequirement,
+            waterNeeds: plant.waterNeeds,
+          },
+        };
+      } catch (error) {
+        log.error("updatePlant tool failed", { error });
+        return { success: false as const, error: "Failed to update plant." };
+      }
+    },
+  }),
+
+  deletePlantTool: tool({
+    description:
+      "Delete a plant from the catalog. Use searchPlants first to find the plant ID. This will also delete associated seeds and plantings.",
+    inputSchema: z.object({
+      plantId: z.string().describe("The ID of the plant to delete"),
+    }),
+    execute: async ({ plantId }) => {
+      log.info("deletePlant tool called", { plantId });
+      try {
+        const plant = await deletePlant(plantId);
+        log.info("deletePlant result", { id: plant.id });
+        return { success: true as const, deletedName: plant.name };
+      } catch (error) {
+        log.error("deletePlant tool failed", { error });
+        return { success: false as const, error: "Failed to delete plant." };
+      }
+    },
+  }),
+
+  getSeedInventory: tool({
+    description:
+      "List seed inventory entries. Can filter by plant or supplier. Returns seed details including plant name, quantity, supplier, and viability.",
+    inputSchema: z.object({
+      plantId: z.string().optional().describe("Filter seeds by plant ID"),
+      supplier: z.string().optional().describe("Filter seeds by supplier name"),
+    }),
+    execute: async (params) => {
+      log.info("getSeedInventory tool called", params);
+      try {
+        const seeds = await getSeeds(params);
+        log.info("getSeedInventory result", { count: seeds.length });
+        return {
+          success: true as const,
+          seeds: seeds.map((s) => ({
+            id: s.id,
+            plantId: s.plantId,
+            plantName: s.plant.name,
+            plantVariety: s.plant.variety,
+            quantity: s.quantity,
+            quantityUnit: s.quantityUnit,
+            supplier: s.supplier,
+            viability: s.viability,
+            lotNumber: s.lotNumber,
+            notes: s.notes,
+            purchaseDate: s.purchaseDate?.toISOString() ?? null,
+            expiryDate: s.expiryDate?.toISOString() ?? null,
+          })),
+        };
+      } catch (error) {
+        log.error("getSeedInventory tool failed", { error });
+        return { success: false as const, error: "Failed to get seed inventory." };
+      }
+    },
+  }),
+
+  deleteSeedTool: tool({
+    description:
+      "Delete a seed inventory entry. Use getSeedInventory first to find the seed ID.",
+    inputSchema: z.object({
+      seedId: z.string().describe("The ID of the seed entry to delete"),
+    }),
+    execute: async ({ seedId }) => {
+      log.info("deleteSeed tool called", { seedId });
+      try {
+        const seed = await deleteSeed(seedId);
+        log.info("deleteSeed result", { id: seed.id });
+        return { success: true as const, deletedSeedId: seed.id };
+      } catch (error) {
+        log.error("deleteSeed tool failed", { error });
+        return { success: false as const, error: "Failed to delete seed." };
+      }
+    },
+  }),
+
+  deletePlantingTool: tool({
+    description:
+      "Delete a planting from the schedule. Use getPlantingSchedule first to find the planting ID.",
+    inputSchema: z.object({
+      plantingId: z.string().describe("The ID of the planting to delete"),
+    }),
+    execute: async ({ plantingId }) => {
+      log.info("deletePlanting tool called", { plantingId });
+      try {
+        const planting = await deletePlanting(plantingId);
+        log.info("deletePlanting result", { id: planting.id });
+        return { success: true as const, deletedPlantingId: planting.id };
+      } catch (error) {
+        log.error("deletePlanting tool failed", { error });
+        return { success: false as const, error: "Failed to delete planting." };
+      }
+    },
+  }),
+
   getDashboardSummary: tool({
     description:
       "Get an overview of the garden including total plant count, seed count, active plantings, and upcoming tasks. Use this when the user asks for a summary or overview.",
@@ -500,6 +739,12 @@ export const tools = {
         .optional()
         .describe("If provided, navigate to the detail page for this specific seed"),
     }),
-    // No execute function -- this is a client-side tool handled by onToolCall in useChat
+    execute: async ({ page, plantId, seedId }) => {
+      log.info("navigateTo tool called", { page, plantId, seedId });
+      return {
+        success: true as const,
+        navigateTo: { page, plantId, seedId },
+      };
+    },
   }),
 };
