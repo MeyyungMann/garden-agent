@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AddLocationButton, LocationActions } from "@/components/crud/location-actions";
 
 export default async function GardenPage() {
   const locations = await db.gardenLocation.findMany({
@@ -14,6 +15,7 @@ export default async function GardenPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Garden Locations</h1>
+        <AddLocationButton />
       </div>
 
       {locations.length === 0 ? (
@@ -43,6 +45,17 @@ export default async function GardenPage() {
                 <p className="text-muted-foreground">
                   {loc._count.plantings} plantings
                 </p>
+                <LocationActions
+                  location={{
+                    id: loc.id,
+                    name: loc.name,
+                    locationType: loc.locationType,
+                    description: loc.description,
+                    sunExposure: loc.sunExposure,
+                    soilType: loc.soilType,
+                    climateZone: loc.climateZone,
+                  }}
+                />
               </CardContent>
             </Card>
           ))}

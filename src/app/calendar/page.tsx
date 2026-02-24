@@ -8,6 +8,7 @@ import { MapPin } from "lucide-react";
 import { StatusBadge } from "@/components/calendar/status-badge";
 import { PlantingTimeline } from "@/components/calendar/planting-timeline";
 import { YearSelector } from "@/components/calendar/year-selector";
+import { AddPlantingButton, PlantingActions } from "@/components/crud/planting-actions";
 
 const log = createLogger("page:calendar");
 
@@ -57,11 +58,21 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
 
   log.debug("CalendarPage rendering", { year: currentYear });
 
-  const plantings = await db.planting.findMany({
-    where: { year: currentYear },
-    include: { plant: true, location: true },
-    orderBy: [{ sowIndoorDate: "asc" }, { sowOutdoorDate: "asc" }, { transplantDate: "asc" }],
-  });
+  const [plantings, plants, locations] = await Promise.all([
+    db.planting.findMany({
+      where: { year: currentYear },
+      include: { plant: true, location: true },
+      orderBy: [{ sowIndoorDate: "asc" }, { sowOutdoorDate: "asc" }, { transplantDate: "asc" }],
+    }),
+    db.plant.findMany({
+      select: { id: true, name: true, variety: true },
+      orderBy: { name: "asc" },
+    }),
+    db.gardenLocation.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   log.info("CalendarPage loaded plantings", { year: currentYear, count: plantings.length });
 
@@ -72,7 +83,10 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Planting Calendar</h1>
-        <YearSelector currentYear={currentYear} />
+        <div className="flex items-center gap-2">
+          <AddPlantingButton plants={plants} locations={locations} />
+          <YearSelector currentYear={currentYear} />
+        </div>
       </div>
 
       {plantings.length === 0 ? (
@@ -109,7 +123,26 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
                               </span>
                             )}
                           </CardTitle>
-                          <StatusBadge status={planting.status} />
+                          <div className="flex items-center gap-2">
+                            <PlantingActions
+                              planting={{
+                                id: planting.id,
+                                plantId: planting.plantId,
+                                locationId: planting.locationId,
+                                year: planting.year,
+                                sowIndoorDate: planting.sowIndoorDate,
+                                sowOutdoorDate: planting.sowOutdoorDate,
+                                transplantDate: planting.transplantDate,
+                                harvestStart: planting.harvestStart,
+                                harvestEnd: planting.harvestEnd,
+                                status: planting.status,
+                                notes: planting.notes,
+                              }}
+                              plants={plants}
+                              locations={locations}
+                            />
+                            <StatusBadge status={planting.status} />
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">

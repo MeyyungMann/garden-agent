@@ -32,7 +32,7 @@ export function ChatInput({
   };
 
   return (
-    <div className="flex gap-2 items-end border-t p-3">
+    <div className="flex gap-2 items-end border-t p-3 shrink-0">
       <Textarea
         ref={textareaRef}
         value={input}

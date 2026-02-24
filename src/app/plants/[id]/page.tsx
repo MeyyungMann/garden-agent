@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { PlantActions } from "@/components/crud/plant-actions";
 
 export default async function PlantDetailPage({
   params,
@@ -35,7 +36,21 @@ export default async function PlantDetailPage({
             </span>
           )}
         </h1>
-        <Badge className="mt-2">{plant.type}</Badge>
+        <div className="flex items-center gap-3 mt-2">
+          <Badge>{plant.type}</Badge>
+          <PlantActions
+            plant={{
+              id: plant.id,
+              name: plant.name,
+              variety: plant.variety,
+              type: plant.type,
+              daysToMaturity: plant.daysToMaturity,
+              sunRequirement: plant.sunRequirement,
+              waterNeeds: plant.waterNeeds,
+              growingNotes: plant.growingNotes,
+            }}
+          />
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sun, Droplets } from "lucide-react";
 import Link from "next/link";
+import { AddPlantButton } from "@/components/crud/plant-actions";
 
 export default async function PlantsPage() {
   const plants = await db.plant.findMany({
@@ -16,6 +17,7 @@ export default async function PlantsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Plants</h1>
+        <AddPlantButton />
       </div>
 
       {plants.length === 0 ? (

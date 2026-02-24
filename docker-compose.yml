@@ -23,6 +23,13 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_MODEL: "qwen3:32b"
+    entrypoint: >
+      sh -c "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done &&
+      MODEL=$${OLLAMA_MODEL:-qwen3:32b} &&
+      if ! ollama list | grep -q $$(echo $$MODEL | cut -d: -f1); then ollama pull $$MODEL; fi &&
+      wait"
     deploy:
       resources:
         reservations:
@@ -35,19 +42,27 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      target: dev
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
+      NODE_ENV: development
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/plant_organizer?schema=public"
       OLLAMA_BASE_URL: "http://ollama:11434"
       OLLAMA_MODEL: "qwen3:32b"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    command: >
+      sh -c "npx prisma generate && npx prisma migrate deploy && npx next dev --turbopack -H 0.0.0.0 -p 3000"
     depends_on:
       db:
         condition: service_healthy

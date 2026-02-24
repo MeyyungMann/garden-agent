@@ -14,38 +14,54 @@ import { useChatAgent } from "@/hooks/use-chat-agent";
 import { Button } from "@/components/ui/button";
 import { Trash2, Maximize2, Minimize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { UIMessage } from "ai";
+import type { SessionState } from "@/hooks/use-chat-agent";
 
 interface ChatPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+interface ChatContentProps {
+  isFullscreen: boolean;
+  onToggleFullscreen: () => void;
+  onClose?: () => void;
+  // Chat state passed from parent
+  messages: UIMessage[];
+  input: string;
+  setInput: (value: string) => void;
+  handleSubmit: () => void;
+  isLoading: boolean;
+  stop: () => void;
+  status: string;
+  error: Error | undefined;
+  clearMessages: () => void;
+  sessionState: SessionState;
+  summary: string | null;
+  hasHistory: boolean;
+  isLoadingHistory: boolean;
+  loadHistory: () => void;
+}
+
 function ChatContent({
   isFullscreen,
   onToggleFullscreen,
   onClose,
-}: {
-  isFullscreen: boolean;
-  onToggleFullscreen: () => void;
-  onClose?: () => void;
-}) {
-  const {
-    messages,
-    input,
-    setInput,
-    handleSubmit,
-    isLoading,
-    stop,
-    status,
-    error,
-    clearMessages,
-    sessionState,
-    summary,
-    hasHistory,
-    isLoadingHistory,
-    loadHistory,
-  } = useChatAgent();
-
+  messages,
+  input,
+  setInput,
+  handleSubmit,
+  isLoading,
+  stop,
+  status,
+  error,
+  clearMessages,
+  sessionState,
+  summary,
+  hasHistory,
+  isLoadingHistory,
+  loadHistory,
+}: ChatContentProps) {
   const statusColor =
     status === "streaming" || status === "submitted"
       ? "bg-yellow-500"
@@ -55,7 +71,7 @@ function ChatContent({
 
   return (
     <>
-      <div className="px-4 py-3 border-b">
+      <div className="px-4 py-3 border-b shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold">Garden AI Assistant</h2>
@@ -145,7 +161,15 @@ function ChatContent({
 export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Lift chat state up so it survives fullscreen toggle
+  const chatState = useChatAgent();
+
   if (!open) return null;
+
+  const contentProps = {
+    ...chatState,
+    stop: chatState.stop,
+  };
 
   // Fullscreen mode — render as a fixed overlay instead of a Sheet
   if (isFullscreen) {
@@ -158,6 +182,7 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
             setIsFullscreen(false);
             onOpenChange(false);
           }}
+          {...contentProps}
         />
       </div>
     );
@@ -166,7 +191,7 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
   // Normal mode — side sheet
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent showCloseButton={false} className="w-full sm:w-[400px] md:w-[540px] flex flex-col p-0">
+      <SheetContent showCloseButton={false} className="w-full sm:w-[400px] md:w-[540px] !gap-0 flex flex-col p-0 overflow-hidden">
         <SheetHeader className="sr-only">
           <SheetTitle>Garden AI Assistant</SheetTitle>
         </SheetHeader>
@@ -174,6 +199,7 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
           isFullscreen={false}
           onToggleFullscreen={() => setIsFullscreen(true)}
           onClose={() => onOpenChange(false)}
+          {...contentProps}
         />
       </SheetContent>
     </Sheet>

@@ -210,6 +210,7 @@ export function useChatAgent() {
         role: m.role as "user" | "assistant",
         content: m.content,
         parts: [{ type: "text" as const, text: m.content }],
+        createdAt: new Date(m.createdAt),
       }));
 
       // Mark these as already saved so we don't re-save them
