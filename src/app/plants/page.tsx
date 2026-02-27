@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sun, Droplets } from "lucide-react";
+import { Clock } from "lucide-react";
 import Link from "next/link";
 import { AddPlantButton } from "@/components/crud/plant-actions";
 
@@ -29,7 +29,7 @@ export default async function PlantsPage() {
           {plants.map((plant) => (
             <Link key={plant.id} href={`/plants/${plant.id}`}>
               <Card className="hover:shadow-md transition-shadow cursor-pointer">
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-1">
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-lg">
                       {plant.name}
@@ -42,22 +42,25 @@ export default async function PlantsPage() {
                     <Badge variant="secondary">{plant.type}</Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <CardContent className="pt-0">
+                  <div className="space-y-1 text-sm text-muted-foreground">
                     {plant.sunRequirement && (
-                      <span className="flex items-center gap-1">
-                        <Sun className="h-3 w-3" />
+                      <div className="flex items-center gap-1.5">
+                        <span>☀️</span>
                         {plant.sunRequirement.replace("_", " ")}
-                      </span>
+                      </div>
                     )}
                     {plant.waterNeeds && (
-                      <span className="flex items-center gap-1">
-                        <Droplets className="h-3 w-3" />
-                        {plant.waterNeeds}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span>💧</span>
+                        Water: {plant.waterNeeds}
+                      </div>
                     )}
                     {plant.daysToMaturity && (
-                      <span>{plant.daysToMaturity} days</span>
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5" />
+                        {plant.daysToMaturity} days to maturity
+                      </div>
                     )}
                   </div>
                   <div className="mt-2 flex gap-3 text-xs text-muted-foreground">
