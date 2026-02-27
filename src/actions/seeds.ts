@@ -33,24 +33,6 @@ export async function getSeeds(filters?: { plantId?: string; supplier?: string }
   }
 }
 
-export async function getSeedById(id: string) {
-  log.debug("getSeedById called", { id });
-  try {
-    const seed = await db.seed.findUniqueOrThrow({
-      where: { id },
-      include: {
-        plant: true,
-      },
-    });
-
-    log.info("getSeedById result", { id: seed.id });
-    return seed;
-  } catch (error) {
-    log.error("getSeedById failed", { id, error });
-    throw error;
-  }
-}
-
 export async function createSeed(data: {
   plantId: string;
   quantity: number;

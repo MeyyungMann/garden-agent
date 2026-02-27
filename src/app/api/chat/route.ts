@@ -1,31 +1,8 @@
 import { runAgent } from "@/ai/agent";
 import { createLogger } from "@/lib/logger";
+import { isConnectionError, isModelNotFoundError } from "@/lib/errors";
 
 const log = createLogger("api:chat");
-
-function isConnectionError(error: unknown): boolean {
-  if (error instanceof Error) {
-    const msg = error.message.toLowerCase();
-    return (
-      msg.includes("econnrefused") ||
-      msg.includes("connection refused") ||
-      msg.includes("fetch failed") ||
-      msg.includes("connect econnrefused")
-    );
-  }
-  return false;
-}
-
-function isModelNotFoundError(error: unknown): boolean {
-  if (error instanceof Error) {
-    const msg = error.message.toLowerCase();
-    return (
-      msg.includes("model") &&
-      (msg.includes("not found") || msg.includes("not available"))
-    );
-  }
-  return false;
-}
 
 export async function POST(req: Request) {
   try {

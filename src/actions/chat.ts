@@ -47,21 +47,6 @@ export async function getLatestSession() {
   }
 }
 
-export async function getSessionMessages(sessionId: string) {
-  log.debug("getSessionMessages called", { sessionId });
-  try {
-    const messages = await db.chatMessage.findMany({
-      where: { sessionId },
-      orderBy: { createdAt: "asc" },
-    });
-    log.info("Session messages retrieved", { count: messages.length });
-    return messages;
-  } catch (error) {
-    log.error("Failed to get session messages", { error });
-    throw new Error("Failed to get session messages");
-  }
-}
-
 export async function saveMessage(sessionId: string, message: ChatMessageInput) {
   log.debug("saveMessage called", { sessionId, role: message.role });
   try {
@@ -190,51 +175,3 @@ export async function summarizeMessages(
   }
 }
 
-// ── Legacy functions (kept for compatibility) ──
-
-export async function saveChatMessages(messages: ChatMessageInput[]) {
-  log.debug("saveChatMessages called (legacy)", { count: messages.length });
-  try {
-    // Create a session for legacy calls
-    const session = await createSession("Legacy Chat");
-    const data = messages.map((m) => ({
-      sessionId: session.id,
-      role: m.role,
-      content: m.content,
-      toolCalls: m.toolCalls ?? undefined,
-      toolResults: m.toolResults ?? undefined,
-    }));
-
-    await db.chatMessage.createMany({ data });
-    log.info("Chat messages saved", { count: messages.length });
-  } catch (error) {
-    log.error("Failed to save chat messages", { error });
-    throw new Error("Failed to save chat messages");
-  }
-}
-
-export async function getChatHistory(limit: number = 50) {
-  log.debug("getChatHistory called", { limit });
-  try {
-    const messages = await db.chatMessage.findMany({
-      orderBy: { createdAt: "asc" },
-      take: limit,
-    });
-    log.info("Chat history retrieved", { count: messages.length });
-    return messages;
-  } catch (error) {
-    log.error("Failed to get chat history", { error });
-    throw new Error("Failed to get chat history");
-  }
-}
-
-export async function clearChatHistory() {
-  log.debug("clearChatHistory called");
-  try {
-    const result = await db.chatMessage.deleteMany();
-    log.info("Chat history cleared", { deletedCount: result.count });
-  } catch (error) {
-    log.error("Failed to clear chat history", { error });
-    throw new Error("Failed to clear chat history");
-  }
-}

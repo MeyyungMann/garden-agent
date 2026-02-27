@@ -27,7 +27,7 @@ const ROUTE_MAP: Record<string, string> = {
 
 export type SessionState = "loading" | "active";
 
-export function useChatAgent() {
+export function useChatAgent(options?: { onNavigate?: () => void }) {
   const router = useRouter();
   const [input, setInput] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -37,6 +37,7 @@ export function useChatAgent() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const sessionIdRef = useRef<string | null>(null);
   const savedMessageIds = useRef(new Set<string>());
+  const onNavigateRef = useRef(options?.onNavigate);
   const messageCountSinceSummary = useRef(0);
   const transportRef = useRef(
     new DefaultChatTransport({
@@ -45,10 +46,14 @@ export function useChatAgent() {
     })
   );
 
-  // Keep ref in sync with state
+  // Keep refs in sync with state/props
   useEffect(() => {
     sessionIdRef.current = sessionId;
   }, [sessionId]);
+
+  useEffect(() => {
+    onNavigateRef.current = options?.onNavigate;
+  }, [options?.onNavigate]);
 
   // Auto-start a new session on mount
   useEffect(() => {
@@ -98,27 +103,55 @@ export function useChatAgent() {
   // Handle navigateTo tool results by watching messages
   useEffect(() => {
     for (const msg of chat.messages) {
-      if (msg.role !== "assistant") continue;
-      for (const part of msg.parts ?? []) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const p = part as any;
-        if (p.type === "tool-invocation" && p.toolInvocation?.toolName === "navigateTo" && p.toolInvocation?.state === "result") {
-          const callId = p.toolInvocation.toolCallId;
-          if (navigatedToolCalls.current.has(callId)) continue;
-          navigatedToolCalls.current.add(callId);
+      const parts = msg.parts ?? [];
 
-          const { page, plantId, seedId } = p.toolInvocation.result?.navigateTo ?? p.toolInvocation.args ?? {};
-          let path: string;
-          if (plantId) {
-            path = `/plants/${plantId}`;
-          } else if (seedId) {
-            path = `/seeds/${seedId}`;
-          } else {
-            path = ROUTE_MAP[page] || "/";
-          }
-          log.info("Navigating to", { path });
-          router.push(path);
-        }
+      for (let i = 0; i < parts.length; i++) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const p: any = parts[i];
+
+        // AI SDK v6: type = "tool-navigateTo", state = "output-available"
+        const toolName =
+          p.toolName ??
+          p.toolInvocation?.toolName ??
+          (typeof p.type === "string" && p.type.startsWith("tool-")
+            ? p.type.slice("tool-".length)
+            : undefined);
+
+        if (toolName !== "navigateTo") continue;
+
+        const state = p.state ?? p.toolInvocation?.state;
+
+        // Never dedupe on undefined
+        const callId =
+          p.toolCallId ??
+          p.toolInvocation?.toolCallId ??
+          `${msg.id}:${i}:${p.type}:${state}`;
+
+        if (state !== "output-available" && state !== "result") continue;
+        if (navigatedToolCalls.current.has(callId)) continue;
+
+        // Try many possible locations for the tool output
+        const payload =
+          p.output ??
+          p.result ??
+          p.toolOutput ??
+          p.toolResult ??
+          p.toolInvocation?.output ??
+          p.toolInvocation?.result ??
+          p;
+
+        const nav = payload?.navigateTo ?? payload;
+        const { page, plantId, seedId } = nav ?? {};
+
+        let path = "/";
+        if (plantId) path = `/plants/${plantId}`;
+        else if (seedId) path = `/seeds/${seedId}`;
+        else if (page) path = ROUTE_MAP[page] || "/";
+
+        navigatedToolCalls.current.add(callId);
+
+        router.push(path);
+        setTimeout(() => onNavigateRef.current?.(), 100);
       }
     }
   }, [chat.messages, router]);

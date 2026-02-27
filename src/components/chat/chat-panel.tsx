@@ -162,7 +162,12 @@ export function ChatPanel({ open, onOpenChange }: ChatPanelProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Lift chat state up so it survives fullscreen toggle
-  const chatState = useChatAgent();
+  const chatState = useChatAgent({
+    onNavigate: () => {
+      setIsFullscreen(false);
+      onOpenChange(false);
+    },
+  });
 
   if (!open) return null;
 

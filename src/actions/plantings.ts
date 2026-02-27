@@ -46,25 +46,6 @@ export async function getPlantings(filters?: {
   }
 }
 
-export async function getPlantingById(id: string) {
-  log.debug("getPlantingById called", { id });
-  try {
-    const planting = await db.planting.findUniqueOrThrow({
-      where: { id },
-      include: {
-        plant: true,
-        location: true,
-      },
-    });
-
-    log.info("getPlantingById result", { id: planting.id });
-    return planting;
-  } catch (error) {
-    log.error("getPlantingById failed", { id, error });
-    throw error;
-  }
-}
-
 export async function createPlanting(data: {
   plantId: string;
   locationId?: string;

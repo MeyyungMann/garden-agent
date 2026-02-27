@@ -8,7 +8,7 @@ const modelName = process.env.OLLAMA_MODEL || "qwen2.5";
 
 log.info("Initializing Ollama provider", { baseURL, model: modelName });
 
-export const ollama = createOllama({
+const ollama = createOllama({
   baseURL,
 });
 

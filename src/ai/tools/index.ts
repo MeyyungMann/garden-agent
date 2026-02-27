@@ -725,11 +725,11 @@ export const tools = {
 
   navigateTo: tool({
     description:
-      "Navigate the user to a specific page in the app. Use this to help users find information or after performing an action (e.g., navigate to the plant detail page after adding a new plant).",
+      "Navigate the user to a specific page in the app. Use this to help users find information or after performing an action (e.g., navigate to the plant detail page after adding a new plant). Valid pages: dashboard, plants, seeds, garden, calendar, chat.",
     inputSchema: z.object({
       page: z
-        .enum(["dashboard", "plants", "seeds", "garden", "calendar", "chat"])
-        .describe("The page to navigate to"),
+        .string()
+        .describe("The page to navigate to. Must be one of: dashboard, plants, seeds, garden, calendar, chat"),
       plantId: z
         .string()
         .optional()
@@ -740,10 +740,16 @@ export const tools = {
         .describe("If provided, navigate to the detail page for this specific seed"),
     }),
     execute: async ({ page, plantId, seedId }) => {
-      log.info("navigateTo tool called", { page, plantId, seedId });
+      const validPages = ["dashboard", "plants", "seeds", "garden", "calendar", "chat"];
+      const normalized = page.toLowerCase().trim();
+      // Fuzzy match: find the closest valid page name
+      const matched = validPages.find(
+        (p) => normalized === p || normalized.startsWith(p.slice(0, 3)) || p.startsWith(normalized.slice(0, 3))
+      ) ?? "dashboard";
+      log.info("navigateTo tool called", { page, normalized, matched, plantId, seedId });
       return {
         success: true as const,
-        navigateTo: { page, plantId, seedId },
+        navigateTo: { page: matched, plantId, seedId },
       };
     },
   }),

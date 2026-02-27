@@ -10,6 +10,7 @@ Local-first AI garden planning assistant. Conversational AI manages plants, seed
 - **AI:** Ollama (qwen3:32b), Vercel AI SDK v6, ai-sdk-ollama
 - **State:** Zustand (client), React hooks
 - **Validation:** Zod v4
+- **Testing:** Vitest (unit + integration), @testing-library/react, Playwright (E2E)
 - **Infrastructure:** Docker Compose (Postgres + Ollama + App), NVIDIA GPU
 
 ## Architecture
@@ -52,10 +53,15 @@ src/
 │   └── ui/              # shadcn/ui primitives
 ├── hooks/
 │   └── use-chat-agent.ts # useChat wrapper with session persistence + navigation
+├── test/
+│   ├── setup-unit.ts        # jest-dom matchers, mock Next.js + server actions
+│   ├── setup-integration.ts # test DB connection, afterEach cleanup
+│   └── fixtures.ts          # Factory functions for test data
 ├── lib/
 │   ├── db.ts            # Prisma client singleton
 │   ├── ollama.ts        # Ollama provider config
 │   ├── logger.ts        # createLogger utility
+│   ├── errors.ts        # isConnectionError, isModelNotFoundError
 │   ├── format.ts        # formatEnum, date helpers
 │   └── utils.ts         # cn() classname utility
 └── types/index.ts       # Re-exports from generated Prisma types
@@ -97,6 +103,12 @@ npm run build            # Production build
 npm run db:migrate       # Run Prisma migrations
 npm run db:seed          # Seed sample data
 npm run db:reset         # Reset DB
+npm run test             # Run all tests (unit + integration)
+npm run test:unit        # Unit tests only (no DB needed)
+npm run test:integration # Integration tests only (needs test DB)
+npm run test:watch       # Watch mode
+npm run test:coverage    # Coverage report
+npm run test:e2e         # E2E tests (needs Docker app running)
 ```
 
 ### Docker (primary workflow)
@@ -124,8 +136,9 @@ Every entity (Plant, Seed, Location, Planting) must have:
 3. **UI CRUD components** in `src/components/crud/` — form dialog + actions (Add/Edit/Delete buttons)
 4. **System prompt** in `src/ai/prompts/system.ts` — documenting all capabilities
 5. **Database context** in `src/ai/agent.ts` — entity included in `buildDatabaseContext()`
+6. **Tests** — unit tests for pure functions, integration tests for DB operations, component tests for UI
 
-When adding a new entity, update ALL five layers.
+When adding a new entity, update ALL six layers.
 
 ### Component Patterns
 - Pages are Server Components (async, fetch data directly)
@@ -157,6 +170,17 @@ toolName: tool({
 - Navigation tool results are handled via useEffect watching `chat.messages` (not onToolCall)
 - Raw `<tools>` XML stripped from displayed text via regex in `chat-messages.tsx`
 - Sessions auto-save messages, auto-summarize after 10+ new messages
+
+### Testing
+- **Vitest** for unit + integration tests, **Playwright** for E2E
+- Unit tests: `src/**/__tests__/unit/` — pure functions, mocked deps, jsdom environment
+- Integration tests: `src/**/__tests__/integration/` — real test DB, sequential execution
+- Component tests: in `__tests__/unit/` alongside components — mock shadcn/ui, use @testing-library/react
+- E2E tests: `e2e/` — Playwright against Docker app on localhost:3001
+- Test DB: `plant_organizer_test` on same Postgres, env var `TEST_DATABASE_URL`
+- Fixtures: `src/test/fixtures.ts` — `createTestPlant()`, `createTestLocation()`, `createTestSeed()`, `createTestPlanting()`
+- Every code change must include or update tests
+- Run `npm run test` before committing
 
 ### Logging
 Use `createLogger("namespace")` from `src/lib/logger.ts`. Namespaces: `ai:agent`, `ai:tools`, `actions:plants`, `hooks:chat-agent`, `api:chat`, etc.

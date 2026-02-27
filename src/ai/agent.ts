@@ -10,7 +10,7 @@ import { getPlantings } from "@/actions/plantings";
 
 const log = createLogger("ai:agent");
 
-async function buildDatabaseContext(): Promise<string> {
+export async function buildDatabaseContext(): Promise<string> {
   try {
     const [locations, plants, seeds, plantings] = await Promise.all([
       getLocations(),

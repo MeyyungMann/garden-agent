@@ -26,25 +26,7 @@ export async function getLocations() {
   }
 }
 
-export async function getLocationById(id: string) {
-  log.debug("getLocationById called", { id });
-  try {
-    const location = await db.gardenLocation.findUniqueOrThrow({
-      where: { id },
-      include: {
-        plantings: {
-          include: { plant: true },
-        },
-      },
-    });
 
-    log.info("getLocationById result", { id: location.id });
-    return location;
-  } catch (error) {
-    log.error("getLocationById failed", { id, error });
-    throw error;
-  }
-}
 
 export async function createLocation(data: {
   name: string;

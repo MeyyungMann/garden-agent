@@ -82,5 +82,3 @@ export function Sidebar({ onNavigate, onOpenChat }: SidebarProps) {
     </aside>
   );
 }
-
-export { navItems };
